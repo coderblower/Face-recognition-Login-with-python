@@ -25,10 +25,10 @@ def process_face_frame(frame):
 # Register face route
 @register_face.route('/register_face', methods=['POST'])
 def register_face_route():
-    enrollment_id = request.form.get('enrollment_id')
+    user_id = request.form.get('user_id')
     name = request.form.get('name')
 
-    if not enrollment_id or not name:
+    if not user_id or not name:
         return jsonify({"message": "Enrollment ID and name are required"}), 400
 
     # Initialize a list to store encodings from multiple images
@@ -59,9 +59,9 @@ def register_face_route():
     # Check if we have collected any face encodings from the frames
     if all_face_encodings:
         # Store the combined encodings in a file for the enrollment ID
-        with open(f'{image_folder}/{enrollment_id}_face_encoding.pkl', 'wb') as f:
+        with open(f'{image_folder}/{user_id}_face_encoding.pkl', 'wb') as f:
             pickle.dump(all_face_encodings, f)
-        return jsonify({"message": f"Face registered for {name} (ID: {enrollment_id})"}), 200
+        return jsonify({"message": f"Face registered for {name} (ID: {user_id})"}), 200
     else:
         return jsonify({"message": "No face detected in the provided images."}), 400
 
@@ -69,8 +69,8 @@ def register_face_route():
 
 @login_face.route('/login_face', methods=['POST'])
 def login_face_route():
-    # Get the enrollment_id if specified (though it won't be used for finding match)
-    enrollment_id = request.form.get('enrollment_id')  
+    # Get the user_id if specified (though it won't be used for finding match)
+    user_id = request.form.get('user_id')  
 
     # Check if 'frame' data is provided in either file upload or base64
     if 'frame' in request.files:
@@ -107,9 +107,9 @@ def login_face_route():
 
                 # Check if any distance is within tolerance
                 if min_distance <= tolerance:
-                    # Extract enrollment_id from the file name (remove "_face_encoding.pkl" suffix)
-                    matched_enrollment_id = file_name.replace('_face_encoding.pkl', '')
-                    return jsonify({"message": "Login successful!", "enrollment_id": matched_enrollment_id}), 200
+                    # Extract user_id from the file name (remove "_face_encoding.pkl" suffix)
+                    matched_user_id = file_name.replace('_face_encoding.pkl', '')
+                    return jsonify({"message": "Login successful!", "user_id": matched_user_id}), 200
 
             except Exception as e:
                 print(f"Error loading file {file_name}: {e}")
