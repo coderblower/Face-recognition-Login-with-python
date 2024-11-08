@@ -70,13 +70,11 @@ def login_face():
 
     tolerance = 0.4  # Lower tolerance for more precise matching
 
-
-
-
-    try:
-        with open(file_path, 'rb') as f:
-            stored_face_encodings = pickle.load(f)
-            
+    # Compare the face with stored face encodings
+    for file in os.listdir(image_folder):
+        if file.endswith('_face_encoding.pkl'):
+            with open(f'{image_folder}/{file}', 'rb') as f:
+                stored_face_encodings = pickle.load(f)
             
             # Check each stored encoding to find the closest match based on distance
             distances = face_recognition.face_distance(stored_face_encodings, face_encodings[0])
@@ -86,15 +84,7 @@ def login_face():
             if min_distance <= tolerance:
                 return jsonify({"message": "Login successful!"}), 200
 
-        return jsonify({"message": "Face not recognized."}), 401
-    
-    
-    except FileNotFoundError:
-        return jsonify({"message": "No stored face encodings found."}), 404
-
-
-
-  
+    return jsonify({"message": "Face not recognized."}), 401
 
 if __name__ == '__main__':
     app.run(debug=True)
