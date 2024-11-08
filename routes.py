@@ -29,7 +29,7 @@ def register_face_route():
     name = request.form.get('name')
 
     if not user_id or not name:
-        return jsonify({"message": "Enrollment ID and name are required"}), 400
+        return jsonify({"message": "User ID and name are required"}), 400
 
     # Initialize a list to store encodings from multiple images
     all_face_encodings = []
