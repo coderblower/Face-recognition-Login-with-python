@@ -66,14 +66,13 @@ def register_face_route():
         return jsonify({"message": "No face detected in the provided images."}), 400
 
 
-# Login face route
-@login_face.route('/login_face', methods=['POST'])
+
+@app.route('/login_face', methods=['POST'])
 def login_face_route():
-    enrollment_id = request.form.get('enrollment_id')  # Get the enrollment_id to locate specific face encoding
+    # Get the enrollment_id if specified (though it won't be used for finding match)
+    enrollment_id = request.form.get('enrollment_id')  
 
-    if not enrollment_id:
-        return jsonify({"message": "Enrollment ID not provided."}), 400
-
+    # Check if 'frame' data is provided in either file upload or base64
     if 'frame' in request.files:
         frame_file = request.files['frame']
         frame = np.array(Image.open(frame_file))
@@ -84,28 +83,37 @@ def login_face_route():
     else:
         return jsonify({"message": "Frame data not provided"}), 400
 
+    # Process the frame to get face encodings
     face_encodings = process_face_frame(frame)
-    
     if len(face_encodings) == 0:
         return jsonify({"message": "No face detected."}), 400
 
-    tolerance = 0.4  # Lower tolerance for more precise matching
-    file_path = os.path.join(image_folder, f"{enrollment_id}_face_encoding.pkl")  # Construct file path for the specific enrollment_id
+    # Set a tolerance for face matching
+    tolerance = 0.4  # Adjust as needed for matching precision
 
-    try:
-        with open(file_path, 'rb') as f:
-            stored_face_encodings = pickle.load(f)
+    # Loop through each .pkl file in the folder
+    for file_name in os.listdir(image_folder):
+        if file_name.endswith('_face_encoding.pkl'):
+            file_path = os.path.join(image_folder, file_name)
+            
+            try:
+                # Load stored face encodings from file
+                with open(file_path, 'rb') as f:
+                    stored_face_encodings = pickle.load(f)
 
-            # Check each stored encoding to find the closest match based on distance
-            distances = face_recognition.face_distance(stored_face_encodings, face_encodings[0])
-            min_distance = min(distances)
+                # Calculate the face distance for the first encoding
+                distances = face_recognition.face_distance(stored_face_encodings, face_encodings[0])
+                min_distance = min(distances)
 
-            # Check if the minimum distance is within our tolerance
-            if min_distance <= tolerance:
-                return jsonify({"message": "Login successful!"}), 200
-            else:
-                return jsonify({"message": "Face not recognized."}), 401
+                # Check if any distance is within tolerance
+                if min_distance <= tolerance:
+                    # Extract enrollment_id from the file name (remove "_face_encoding.pkl" suffix)
+                    matched_enrollment_id = file_name.replace('_face_encoding.pkl', '')
+                    return jsonify({"message": "Login successful!", "enrollment_id": matched_enrollment_id}), 200
 
-    except FileNotFoundError:
-        return jsonify({"message": "No stored face encodings found for this enrollment ID."}), 404
+            except Exception as e:
+                print(f"Error loading file {file_name}: {e}")
+                continue
 
+    # If no match is found, return "Face not recognized"
+    return jsonify({"message": "Face not recognized."}), 401
