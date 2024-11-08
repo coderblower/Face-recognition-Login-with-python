@@ -67,7 +67,7 @@ def register_face_route():
 
 
 
-@app.route('/login_face', methods=['POST'])
+@login_face.route('/login_face', methods=['POST'])
 def login_face_route():
     # Get the enrollment_id if specified (though it won't be used for finding match)
     enrollment_id = request.form.get('enrollment_id')  
